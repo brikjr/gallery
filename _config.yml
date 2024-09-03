@@ -26,9 +26,9 @@ comments :
 
 # Internal nav
 nav:
-  - GALLERY: "https://brikjr.github.io/photorama/gallery/"  
-  - JOURNAL: "https://brikjr.github.io/photorama/journal/"
-  - ABOUT: "https://brikjr.github.io/photorama/about/"
+  - GALLERY: "https://brikjr.github.io/gallery/"  
+  - JOURNAL: "https://brikjr.github.io/journal/"
+  # - ABOUT: "https://brikjr.github.io/about/"
 
 # All translation keys
 translations:
