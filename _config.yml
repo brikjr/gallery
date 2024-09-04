@@ -26,9 +26,9 @@ comments :
 
 # Internal nav
 nav:
-  - GALLERY: "https://brikjr.github.io/gallery/"  
+  - HOME: "https://brikjr.github.io/"
+  - GALLERY: "https://brikjr.github.io/gallery/images"  
   - JOURNAL: "https://brikjr.github.io/gallery/journal/"
-  - ABOUT: "https://brikjr.github.io/brik/about/"
 
 # All translation keys
 translations:
