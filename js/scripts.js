@@ -84,25 +84,62 @@
 
 	// kenburns on one featured image header image
 	var $kenburns = jQuery('.kenburns-gallery.gallery');
-	if ( $kenburns.length > 0 ) {
-		var gallery_set = [];
-		$kenburns.find('.gallery-icon img').each( function() {
-			gallery_set.push(jQuery(this).attr('src'));
-		});
 
-		jQuery('#kenburns').attr('width', jQuery(window).width());
-		jQuery('#kenburns').attr('height', jQuery(window).height());
-		jQuery('#kenburns').kenburns({
-			images: gallery_set,
-			frames_per_second: 30,
-			display_time: 5000,
-			fade_time: 1000,
-			zoom: 1,
-			background_color:'#F7F6F5'
-		});
-	}
+if ($kenburns.length > 0) {
+    var gallery_set = [];
+    $kenburns.find('.gallery-icon img').each(function() {
+        gallery_set.push(jQuery(this).attr('src'));
+    });
 
-	
+    // Function to check if the device is mobile
+    function isMobile() {
+        return window.matchMedia("(max-width: 767px)").matches;
+    }
+
+    // Function to set up Ken Burns effect or static image
+    function setupKenBurns() {
+        var $container = jQuery('#kenburns');
+        
+        if (!isMobile()) {
+            $container.empty(); // Clear any existing content
+            $container.attr('width', jQuery(window).width());
+            $container.attr('height', jQuery(window).height());
+            $container.kenburns({
+                images: gallery_set,
+                frames_per_second: 30,
+                display_time: 5000,
+                fade_time: 1000,
+                zoom: 1,
+                background_color: '#F7F6F5'
+            });
+        } else {
+            // Display static image for mobile
+			var testImage = 'img/slider/phone.PNG';
+            if (gallery_set.length > 0) {
+                $container.empty(); // Clear any existing content
+                var $firstImage = $container.css({
+                    'width': '100%',
+                    'height': '100%',
+                    'background-image': 'url(' + testImage + ')',
+                    'background-size': 'cover',
+                    'background-position': 'center center',
+                    'background-repeat': 'no-repeat',
+					'z-index': -1
+                });
+            }
+			$container.append($firstImage);
+			$container.css('min-height', '300px');
+        }
+    }
+
+    // Initial setup
+    setupKenBurns();
+
+    // Re-run on window resize
+    jQuery(window).resize(function() {
+        setupKenBurns();
+    });
+}
 	
 	
 	/* ********* WINDOW LOAD ********** */
