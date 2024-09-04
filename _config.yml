@@ -26,10 +26,11 @@ comments :
 
 # Internal nav
 nav:
-  - HOME: "https://brikjr.github.io/"
+  - HOME: "https://brikjr.github.io/gallery"
   # - ABOUT: 
   - GALLERY: "https://brikjr.github.io/gallery/gallery"  
-  - JOURNAL: "https://brikjr.github.io/gallery/journal/"
+  # - JOURNAL: "https://brikjr.github.io/"
+  - MAIN: "https://brikjr.github.io/"
 
 # All translation keys
 translations:
