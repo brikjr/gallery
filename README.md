@@ -1,4 +1,4 @@
 -photo--gallery
 ====================
 
-For template checkout to ["Template"](https://github.com/brikjr/gallery/tree/template)! branch
+For template checkout to ["Template branch"](https://github.com/brikjr/gallery/tree/template)
