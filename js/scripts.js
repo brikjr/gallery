@@ -114,12 +114,13 @@ if ($kenburns.length > 0) {
             });
         } else {
             // Display static image for mobile
-			var testImage = 'img/slider/phone.PNG';
+			var testImage = 'img/slider/snap.gif';
             if (gallery_set.length > 0) {
                 $container.empty(); // Clear any existing content
                 var $firstImage = $container.css({
-                    'width': '100%',
-                    'height': '100%',
+                    'width': '80vh',
+                    'height': '110%',
+					'margin-left': '-120px',
                     'background-image': 'url(' + testImage + ')',
                     'background-size': 'cover',
                     'background-position': 'center center',
