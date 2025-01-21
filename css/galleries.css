@@ -191,24 +191,121 @@ img.mfp-img { padding: 0; }
 }
 
 /* Banner lazy loading styles */
-.kenburns-gallery img {
-    opacity: 0;
-    transition: opacity 0.4s ease-in-out;
-    min-height: 100vh; /* Full viewport height for banner */
+.kenburns-gallery img.blur-load {
+    filter: blur(20px);
+    transition: filter 0.4s ease-in-out;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .kenburns-gallery img.is-loaded {
-    opacity: 1;
+    filter: blur(0);
 }
 
-/* Loading placeholder for banner */
+/* Remove the loading spinner styles and replace with blur effect */
 .kenburns-gallery img:not(.is-loaded) {
-    background: #000 url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38"><circle stroke="%23999" stroke-width="2" fill="none" cx="19" cy="19" r="18"><animateTransform attributeName="transform" type="rotate" from="0 19 19" to="360 19 19" dur="1s" repeatCount="indefinite"/></circle></svg>') no-repeat center center;
-    background-size: 2rem;
+    opacity: 0.8;
 }
 
 /* Ensure kenburns container maintains height while loading */
 #kenburns {
     min-height: 100vh;
     background: #000;
+    overflow: hidden; /* Prevent blur from extending outside */
+}
+
+/* Update masonry gallery image loading styles */
+.gallery-item img.blur-load {
+    filter: blur(20px);
+    transition: filter 0.4s ease-in-out;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.gallery-item img.is-loaded {
+    filter: blur(0);
+}
+
+.gallery-item img:not(.is-loaded) {
+    opacity: 0.8;
+}
+
+/* Progressive header image loading */
+.header-img-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #000;
+}
+
+.header-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+    filter: blur(20px);
+    transform: scale(1.1);
+}
+
+.header-img-thumb {
+    filter: blur(20px);
+    transform: scale(1.1);
+    transition: opacity 0.3s ease-out;
+}
+
+.header-img-full {
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+}
+
+.header-img-full.loaded {
+    opacity: 1;
+}
+
+/* Header image loading styles */
+.header-img {
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+    filter: blur(20px);
+    transform: scale(1.1);
+}
+
+.header-img.is-loaded {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+}
+
+/* Remove grey background during load */
+.intro-header {
+    background-color: #000;
+    transition: opacity 0.5s ease-in-out;
+    position: relative;
+}
+
+.intro-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-position: center;
+    background-size: cover;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out, filter 0.5s ease-in-out;
+    filter: blur(20px);
+}
+
+.intro-header.is-loaded::before {
+    opacity: 1;
+    filter: blur(0);
 }

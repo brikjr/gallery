@@ -94,11 +94,19 @@
 			var imgSrc = $img.attr('src');
 			gallery_set.push(imgSrc);
 			
+			// Create a low-res version of the image URL (assuming you have these)
+			var lowResSrc = imgSrc.replace(/\.(png|jpe?g)$/i, '-thumb.$1');
+			
 			// Set up lazy loading attributes
 			$img
 				.attr('loading', 'lazy')
 				.attr('data-src', imgSrc)
-				.css('min-height', '100vh') // Full viewport height for banner
+				.addClass('blur-load')
+				.css({
+					'background-image': `url(${lowResSrc})`,
+					'background-size': 'cover',
+					'min-height': '100vh'
+				})
 				.removeAttr('src');
 		});
 
@@ -112,9 +120,14 @@
 			entries.forEach(function(entry) {
 				if (entry.isIntersecting) {
 					var img = entry.target;
+					var $img = $(img);
+					
+					// Load the high-res image
 					img.src = img.dataset.src;
 					img.onload = function() {
-						$(img).addClass('is-loaded');
+						$img
+							.addClass('is-loaded')
+							.css('background-image', 'none');
 					};
 					observer.unobserve(img);
 				}
@@ -322,5 +335,25 @@
 		}
 	});
 	
+
+	document.addEventListener('DOMContentLoaded', function() {
+		// Find header container
+		var headerContainer = document.querySelector('.intro-header');
+		if (headerContainer) {
+			// Get the background image URL
+			var style = window.getComputedStyle(headerContainer);
+			var bgImage = style.backgroundImage;
+			
+			if (bgImage && bgImage !== 'none') {
+				// Create a new image to preload
+				var img = new Image();
+				img.onload = function() {
+					headerContainer.classList.add('is-loaded');
+				};
+				// Extract URL from background-image property
+				img.src = bgImage.replace(/url\(['"]?(.*?)['"]?\)/i, '$1');
+			}
+		}
+	});
 
 } )( jQuery );
