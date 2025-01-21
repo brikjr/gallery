@@ -345,10 +345,17 @@
 			var bgImage = style.backgroundImage;
 			
 			if (bgImage && bgImage !== 'none') {
+				// Create placeholder effect
+				headerContainer.style.backgroundColor = '#000';
+				headerContainer.classList.add('loading');
+				
 				// Create a new image to preload
 				var img = new Image();
 				img.onload = function() {
+					// Once image is loaded, set it as background and fade in
+					headerContainer.style.backgroundImage = `url(${img.src})`;
 					headerContainer.classList.add('is-loaded');
+					headerContainer.classList.remove('loading');
 				};
 				// Extract URL from background-image property
 				img.src = bgImage.replace(/url\(['"]?(.*?)['"]?\)/i, '$1');
