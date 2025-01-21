@@ -148,4 +148,67 @@ img.mfp-img { padding: 0; }
 	/*galleries adapted*/
 	.fullscreen-gallery .gallery-caption .entry-summary { padding-bottom: 5em; }
 	.masonry-gallery .gallery-item { width: 98% !important; }
-	  
+}
+
+/* Add these styles at the end of the file */
+
+.masonry-gallery {
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.masonry-gallery.is-loading {
+    opacity: 0;
+}
+
+.gallery-item {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.4s ease-in-out, transform 0.4s ease-out;
+}
+
+.gallery-item.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Lazy loading image styles */
+.gallery-item img {
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out;
+    min-height: 200px; /* Ensure placeholder is visible */
+}
+
+.gallery-item img.is-loaded {
+    opacity: 1;
+    min-height: auto;
+}
+
+/* Loading placeholder for dark theme */
+.gallery-item img:not(.is-loaded) {
+    background: #1a1a1a url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38"><circle stroke="%23999" stroke-width="2" fill="none" cx="19" cy="19" r="18"><animateTransform attributeName="transform" type="rotate" from="0 19 19" to="360 19 19" dur="1s" repeatCount="indefinite"/></circle></svg>') no-repeat center center;
+    background-size: 2rem;
+}
+
+/* Banner lazy loading styles */
+.kenburns-gallery img {
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out;
+    min-height: 100vh; /* Full viewport height for banner */
+}
+
+.kenburns-gallery img.is-loaded {
+    opacity: 1;
+}
+
+/* Loading placeholder for banner */
+.kenburns-gallery img:not(.is-loaded) {
+    background: #000 url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38"><circle stroke="%23999" stroke-width="2" fill="none" cx="19" cy="19" r="18"><animateTransform attributeName="transform" type="rotate" from="0 19 19" to="360 19 19" dur="1s" repeatCount="indefinite"/></circle></svg>') no-repeat center center;
+    background-size: 2rem;
+}
+
+/* Ensure kenburns container maintains height while loading */
+#kenburns {
+    min-height: 100vh;
+    background: #000;
+}

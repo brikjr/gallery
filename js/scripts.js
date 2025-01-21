@@ -85,62 +85,95 @@
 	// kenburns on one featured image header image
 	var $kenburns = jQuery('.kenburns-gallery.gallery');
 
-if ($kenburns.length > 0) {
-    var gallery_set = [];
-    $kenburns.find('.gallery-icon img').each(function() {
-        gallery_set.push(jQuery(this).attr('src'));
-    });
+	if ($kenburns.length > 0) {
+		var gallery_set = [];
+		
+		// Set up lazy loading for kenburns gallery images
+		$kenburns.find('.gallery-icon img').each(function() {
+			var $img = $(this);
+			var imgSrc = $img.attr('src');
+			gallery_set.push(imgSrc);
+			
+			// Set up lazy loading attributes
+			$img
+				.attr('loading', 'lazy')
+				.attr('data-src', imgSrc)
+				.css('min-height', '100vh') // Full viewport height for banner
+				.removeAttr('src');
+		});
 
-    // Function to check if the device is mobile
-    function isMobile() {
-        return window.matchMedia("(max-width: 767px)").matches;
-    }
+		// Function to check if the device is mobile
+		function isMobile() {
+			return window.matchMedia("(max-width: 767px)").matches;
+		}
 
-    // Function to set up Ken Burns effect or static image
-    function setupKenBurns() {
-        var $container = jQuery('#kenburns');
-        
-        if (!isMobile()) {
-            $container.empty(); // Clear any existing content
-            $container.attr('width', jQuery(window).width());
-            $container.attr('height', jQuery(window).height());
-            $container.kenburns({
-                images: gallery_set,
-                frames_per_second: 30,
-                display_time: 5000,
-                fade_time: 1000,
-                zoom: 1,
-                background_color: '#F7F6F5'
-            });
-        } else {
-            // Display static image for mobile
-			var testImage = 'img/slider/snap.gif';
-            if (gallery_set.length > 0) {
-                $container.empty(); // Clear any existing content
-                var $firstImage = $container.css({
-                    'width': '80vh',
-                    'height': '110%',
-					'margin-left': '-120px',
-                    'background-image': 'url(' + testImage + ')',
-                    'background-size': 'cover',
-                    'background-position': 'center center',
-                    'background-repeat': 'no-repeat',
-					'z-index': -1
-                });
-            }
-			$container.append($firstImage);
-			$container.css('min-height', '300px');
-        }
-    }
+		// Initialize Intersection Observer for banner images
+		var bannerObserver = new IntersectionObserver(function(entries, observer) {
+			entries.forEach(function(entry) {
+				if (entry.isIntersecting) {
+					var img = entry.target;
+					img.src = img.dataset.src;
+					img.onload = function() {
+						$(img).addClass('is-loaded');
+					};
+					observer.unobserve(img);
+				}
+			});
+		}, {
+			rootMargin: '50px 0px',
+			threshold: 0.1
+		});
 
-    // Initial setup
-    setupKenBurns();
+		// Observe all banner images
+		$kenburns.find('img').each(function() {
+			bannerObserver.observe(this);
+		});
 
-    // Re-run on window resize
-    jQuery(window).resize(function() {
-        setupKenBurns();
-    });
-}
+		// Function to set up Ken Burns effect or static image
+		function setupKenBurns() {
+			var $container = jQuery('#kenburns');
+			
+			if (!isMobile()) {
+				$container.empty();
+				$container.attr('width', jQuery(window).width());
+				$container.attr('height', jQuery(window).height());
+				$container.kenburns({
+					images: gallery_set,
+					frames_per_second: 30,
+					display_time: 5000,
+					fade_time: 1000,
+					zoom: 1,
+					background_color: '#000'
+				});
+			} else {
+				// Display static image for mobile
+				var testImage = 'img/slider/snap.gif';
+				if (gallery_set.length > 0) {
+					$container.empty();
+					var $firstImage = $container.css({
+						'width': '80vh',
+						'height': '110%',
+						'margin-left': '-120px',
+						'background-image': 'url(' + testImage + ')',
+						'background-size': 'cover',
+						'background-position': 'center center',
+						'background-repeat': 'no-repeat',
+						'z-index': -1
+					});
+				}
+				$container.append($firstImage);
+				$container.css('min-height', '300px');
+			}
+		}
+
+		// Initial setup
+		setupKenBurns();
+
+		// Re-run on window resize
+		jQuery(window).resize(function() {
+			setupKenBurns();
+		});
+	}
 	
 	
 	/* ********* WINDOW LOAD ********** */
@@ -155,30 +188,82 @@ if ($kenburns.length > 0) {
 	
 	
 		// masonry gallery
-		var $masonry_gallery = jQuery('.masonry-gallery.gallery');
-		if ( $masonry_gallery.length > 0 ) {
-
-			$masonry_gallery.each( function(index, element) {
+		var $masonry_gallery = jQuery('.masonry-gallery');
+		if ($masonry_gallery.length > 0) {
+			$masonry_gallery.each(function(index, element) {
 				var $masonry_items = $(element).find('.gallery-item');
-			
-				// set masonry layout
-				$(element).isotope({
-					masonry: { columnWidth: $(element).find('.gallery-item')[0] },
-					itemSelector: '.gallery-item'
+				var $grid = $(element);
+				
+				// Add loading class initially
+				$masonry_gallery.addClass('is-loading');
+				
+				// Set up lazy loading attributes on images
+				$grid.find('img').each(function() {
+					var $img = $(this);
+					$img
+						.attr('loading', 'lazy')
+						.attr('data-src', $img.attr('src'))
+						.css('min-height', '200px') // Set initial height
+						.removeAttr('src');
 				});
-				$(element).isotope('layout');
-					
-				// filtering
-				jQuery('#gallery-filter li a').on('click', function(){
+
+				// Initialize Intersection Observer for lazy loading
+				var imageObserver = new IntersectionObserver(function(entries, observer) {
+					entries.forEach(function(entry) {
+						if (entry.isIntersecting) {
+							var img = entry.target;
+							var $img = $(img);
+							
+							// Start loading the image
+							img.src = img.dataset.src;
+							
+							// When image loads
+							img.onload = function() {
+								$img
+									.addClass('is-loaded')
+									.css('min-height', 'auto'); // Remove min-height after load
+								$grid.isotope('layout');
+							};
+							
+							observer.unobserve(img);
+						}
+					});
+				}, {
+					rootMargin: '50px 0px', // Start loading when image is 50px from viewport
+					threshold: 0.1 // Trigger when even 10% of the image is visible
+				});
+
+				// Initialize isotope with initial layout
+				$grid.isotope({
+					itemSelector: '.gallery-item',
+					percentPosition: true,
+					masonry: {
+						columnWidth: '.gallery-item'
+					}
+				});
+
+				// Observe all images
+				$grid.find('img').each(function() {
+					imageObserver.observe(this);
+				});
+
+				// Remove loading class and show items once initial layout is done
+				setTimeout(function() {
+					$masonry_gallery.removeClass('is-loading');
+					$('.gallery-item').addClass('is-visible');
+				}, 500);
+
+				// Keep your existing filtering code
+				jQuery('#gallery-filter li a').on('click', function() {
 					jQuery('#gallery-filter li a').removeClass('active');
 					jQuery(this).addClass('active');
 					var selector = jQuery(this).attr('data-filter');
-					$masonry_gallery.isotope({ filter: selector });
+					$grid.isotope({ filter: selector });
 					return false;
 				});
 
-				// changing layout
-				jQuery('#grid-changer li a').on('click', function(){
+				// Keep your existing layout changing code
+				jQuery('#grid-changer li a').on('click', function() {
 					jQuery('#grid-changer li a').removeClass('active');
 					jQuery(this).toggleClass('active');
 
@@ -186,9 +271,8 @@ if ($kenburns.length > 0) {
 					$masonry_items.removeClass('col-4');
 					$masonry_items.removeClass('col-5');
 					$masonry_items.toggleClass(jQuery(this).closest('li').attr('class'));
-					$masonry_gallery.isotope('layout');
+					$grid.isotope('layout');
 				});
-			
 			});
 		}
 
