@@ -38,8 +38,11 @@ class AdminPanel < Sinatra::Base
     enable :logging
     
     # Set up logger
-    set :logger, Logger.new(STDOUT)
-    settings.logger.level = Logger::DEBUG
+    file = File.new("admin.log", 'a+')
+    file.sync = true
+    use Rack::CommonLogger, file
+    logger = Logger.new(file)
+    set :logger, logger
 
     set :root, File.dirname(__FILE__)
     set :views, File.join(settings.root, 'views')
@@ -406,18 +409,18 @@ class AdminPanel < Sinatra::Base
       '© Brik'
     end
 
-    def require_authentication
-      redirect '/admin/login' unless authenticated?
+    def require_auth
+      authenticate!
     end
   end
 
   # Add before filter for protected routes
   before '/dashboard' do
-    require_authentication
+    require_auth
   end
 
   before '/gallery/*' do
-    require_authentication
+    require_auth
   end
 
   # Add error handling
@@ -447,9 +450,9 @@ class AdminPanel < Sinatra::Base
   end
 
   post '/login' do
-    # Add debug logging
-    logger.info "Password attempt: #{params[:password]}"
-    logger.info "Expected password: #{ENV['ADMIN_PASSWORD']}"
+    logger.info "Request: /login"
+    logger.info "Session: #{session.inspect}"
+    logger.info "Authenticated: #{authenticated?}"
     
     if params[:password] == ENV['ADMIN_PASSWORD']
       session[:authenticated] = true
@@ -468,12 +471,14 @@ class AdminPanel < Sinatra::Base
 
   # Dashboard
   get '/dashboard' do
+    require_auth
     @galleries = get_galleries
     erb :dashboard
   end
 
   # Gallery management
   get '/gallery/:name' do
+    require_auth
     @gallery = normalize_gallery_name(params[:name])
     @images = get_gallery_images(@gallery)
     
@@ -485,20 +490,24 @@ class AdminPanel < Sinatra::Base
   end
 
   # Image upload
-  post '/gallery/:gallery/upload' do
-    authenticate!
+  post '/gallery/:name/upload' do
+    require_auth
     
-    gallery = params[:gallery]
+    unless params[:file] && params[:file][:tempfile] && params[:file][:filename]
+      flash[:error] = "No file selected"
+      redirect "/admin/gallery/#{params[:name]}"
+    end
+
     file = params[:file]
     filename = file[:filename]
     
-    if process_image(gallery, file[:tempfile], filename)
+    if process_image(file, params[:name], filename, params[:caption], params[:copyright])
       flash[:success] = "Image uploaded successfully"
     else
       flash[:error] = "Failed to upload image"
     end
     
-    redirect "/admin/gallery/#{gallery}"
+    redirect "/admin/gallery/#{params[:name]}"
   end
 
   # Delete image
@@ -620,34 +629,110 @@ class AdminPanel < Sinatra::Base
     end
   end
 
-  def process_image(gallery, file, filename)
+  def process_image(file, gallery, filename, caption, copyright)
     begin
-      # Save temp file
-      temp_path = File.join(Dir.tmpdir, filename)
-      File.write(temp_path, file.read)
-      
-      # Call Python handler
+      # Get absolute paths
+      root_dir = File.expand_path('../..', __FILE__)
+      handler_script = File.join(root_dir, 'admin', 'image_handler.py')
+
+      # Try to find conda Python first, then fall back to other locations
+      python_locations = [
+        '/Users/rishabhpandey/mambaforge/envs/server/bin/python',  # Your conda env python
+        File.join(root_dir, 'venv', 'bin', 'python3'),
+        File.join(root_dir, 'venv', 'Scripts', 'python.exe'),
+        'python3',
+        'python'
+      ]
+
+      python_cmd = nil
+      python_locations.each do |loc|
+        if system("which #{loc} > /dev/null 2>&1") || File.exist?(loc)
+          # Verify this Python has PIL installed
+          check_pil = <<~PYTHON
+            import sys
+            try:
+                import PIL
+                sys.exit(0)
+            except ImportError:
+                sys.exit(1)
+          PYTHON
+          
+          if system(loc, '-c', check_pil)
+            python_cmd = loc
+            break
+          end
+        end
+      end
+
+      unless python_cmd
+        logger.error "No Python interpreter with PIL found. Tried: #{python_locations.join(', ')}"
+        return false
+      end
+
+      unless File.exist?(handler_script)
+        logger.error "Image handler script not found at: #{handler_script}"
+        return false
+      end
+
+      # Access the tempfile from the file hash
+      tempfile = file[:tempfile]
+
+      # Build command
       cmd = [
-        'python3', 
-        File.join(__dir__, 'image_handler.py'),
+        python_cmd,
+        handler_script,
         'process',
-        temp_path,
+        tempfile.path,
         gallery,
         filename,
-        params[:caption].to_s,
-        params[:copyright].to_s
+        caption || '',
+        copyright || ''
       ]
       
+      logger.info "Using Python interpreter: #{python_cmd}"
+      logger.info "Executing command: #{cmd.join(' ')}"
+      
+      # Execute command and capture output
       stdout, stderr, status = Open3.capture3(*cmd)
       
-      if status.success?
-        true
-      else
-        logger.error "Python error: #{stderr}"
-        false
+      unless status.success?
+        logger.error "Command failed with status: #{status.exitstatus}"
+        logger.error "STDOUT: #{stdout}"
+        logger.error "STDERR: #{stderr}"
+        return false
       end
-    ensure
-      File.unlink(temp_path) if temp_path && File.exist?(temp_path)
+
+      return true
+    rescue => e
+      logger.error "Error processing image: #{e.message}"
+      logger.error e.backtrace.join("\n")
+      return false
+    end
+  end
+
+  def remove_image(gallery, filename)
+    begin
+      # Use virtual environment's Python
+      python_cmd = File.join(File.dirname(__FILE__), '..', 'venv', 'bin', 'python3')
+      
+      # If Windows, use different path
+      if Gem.win_platform?
+        python_cmd = File.join(File.dirname(__FILE__), '..', 'venv', 'Scripts', 'python.exe')
+      end
+
+      result = system(
+        python_cmd,
+        File.join(File.dirname(__FILE__), 'image_handler.py'),
+        'remove',
+        'dummy',  # Not used for remove action
+        gallery,
+        filename
+      )
+
+      return result
+    rescue => e
+      logger.error "Error removing image: #{e.message}"
+      return false
     end
   end
 end 
