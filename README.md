@@ -181,6 +181,8 @@ If the admin panel is not working:
    ```bash
    # Start Jekyll with detailed logs
    bundle exec jekyll serve --port 5000 --livereload --verbose
+   # for ruby server
+   bundle exec rackup -p 4567  
    ```
 
 2. **Monitor GitHub API Rate Limits**
@@ -209,6 +211,6 @@ Please report any issues or bugs in the GitHub issue tracker. Pull requests are 
    # Example output: 7cd9557c4c03a50a3de3731ce74f762c...
 
    # Generate password hash
-   ruby -e "require 'bcrypt'; puts BCrypt::Password.create('your_password')"
+   ruby -e "require 'bcrypt'; puts BCrypt::Password.create('gallery123')"
    # Example output: $2a$12$K7Sv1OE4YMB0vU7Wf8USW.RGkE0J...
    ```
