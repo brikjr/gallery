@@ -202,7 +202,7 @@ If the admin panel is not working:
 
 Please report any issues or bugs in the GitHub issue tracker. Pull requests are welcome!
 
-## License
+## Random Notes
 
 **Generate Secure Values**
    ```bash
@@ -214,3 +214,41 @@ Please report any issues or bugs in the GitHub issue tracker. Pull requests are 
    ruby -e "require 'bcrypt'; puts BCrypt::Password.create('gallery123')"
    # Example output: $2a$12$K7Sv1OE4YMB0vU7Wf8USW.RGkE0J...
    ```
+
+
+1. First, let's stash your local changes:
+```bash
+git stash
+```
+
+2. Then remove the untracked files (since they're already in the remote):
+```bash
+rm images/albums/landscape/000024.JPG
+rm images/albums/portrait/000036.JPG
+```
+
+3. Now pull from remote:
+```bash
+git pull origin gh-pages
+```
+
+4. Apply your stashed changes back:
+```bash
+git stash pop
+```
+
+5. If there are any conflicts, resolve them and then:
+```bash
+git add .
+git commit -m "Merged remote changes and resolved conflicts"
+```
+
+6. Finally, push everything back:
+```bash
+git push origin gh-pages
+```
+
+If you want to see what changes are in your stash before applying them:
+```bash
+git stash show -p
+```
