@@ -1,2 +1,8 @@
 _site
 node_modules
+.env
+.env.local
+.env.*
+.env.*.local
+.env.production
+.env.development
