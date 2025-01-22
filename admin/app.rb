@@ -626,9 +626,10 @@ class AdminPanel < Sinatra::Base
       # Get all image and metadata files
       files_to_push = []
       
-      # Add image files
+      # Add image files, excluding thumbs directories
       Dir.glob('images/albums/**/*.*').each do |file|
         next if File.directory?(file)
+        next if file.include?('/thumbs/') # Skip thumbs directories
         files_to_push << file
       end
       

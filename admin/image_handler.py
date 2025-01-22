@@ -51,7 +51,6 @@ class ImageHandler:
             
     def update_gallery_yaml(self, gallery, filename, caption='', copyright=''):
         try:
-            # Note: index.html is in images/gallery while photos are in images/albums/gallery
             index_file = os.path.join('images', gallery, 'index.html')
             
             if not os.path.exists(index_file):
@@ -70,21 +69,52 @@ class ImageHandler:
             # Parse front matter
             front_matter = yaml.safe_load(parts[1])
             
+            # Preserve the order of fields
+            field_order = [
+                'layout',
+                'title',
+                'description',
+                'active',
+                'header-img',
+                'album-title',
+                'images'
+            ]
+            
             # Add image to list
             if 'images' not in front_matter:
                 front_matter['images'] = []
                 
             image_entry = {
+                'image_path': f'/images/albums/{gallery}/{filename}',
                 'caption': caption,
-                'copyright': copyright,
-                'image_path': f'/images/albums/{gallery}/{filename}'  # Use correct path format
+                'copyright': copyright
             }
             
             front_matter['images'].append(image_entry)
             
-            # Write updated front matter
-            parts[1] = yaml.dump(front_matter, default_flow_style=False, allow_unicode=True, sort_keys=False)
-            content = '---\n'.join(parts)
+            # Create ordered dictionary
+            ordered_front_matter = {}
+            for field in field_order:
+                if field in front_matter:
+                    ordered_front_matter[field] = front_matter[field]
+            
+            # Add any remaining fields
+            for key, value in front_matter.items():
+                if key not in ordered_front_matter:
+                    ordered_front_matter[key] = value
+            
+            # Write updated front matter with preserved formatting
+            yaml_content = yaml.dump(ordered_front_matter, 
+                                   default_flow_style=False, 
+                                   allow_unicode=True, 
+                                   sort_keys=False,
+                                   width=float("inf"))  # Prevent line wrapping
+            
+            # Fix YAML formatting
+            yaml_content = yaml_content.replace('header-img:', 'header-img: ')
+            yaml_content = yaml_content.replace('album-title:', 'album-title: ')
+            
+            content = '---\n' + yaml_content + '---\n' + parts[2]
             
             with open(index_file, 'w') as f:
                 f.write(content)
