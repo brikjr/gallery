@@ -18,6 +18,7 @@ gem 'dotenv', '~> 2.8'
 gem 'sinatra'
 gem 'bcrypt'
 gem 'mini_magick', '~> 4.12'
+gem 'sinatra-flash'
 
 # Development dependencies
 group :development do
