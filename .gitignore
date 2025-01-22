@@ -6,3 +6,12 @@ node_modules
 .env.*.local
 .env.production
 .env.development
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
