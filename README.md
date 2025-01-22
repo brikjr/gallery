@@ -91,6 +91,14 @@ Before you begin, ensure you have the following installed with these specific ve
 2. **View the website**
    - Open your browser and go to: `http://localhost:5000/gallery/`
 
+3. **Admin Panel**
+   ```bash
+   bundle install
+   bundle exec rackup -p 4567
+   ```
+   This will start a local server with live reload enabled. 
+   
+
 ## Troubleshooting
 
 ### Image Upload Errors
@@ -194,4 +202,13 @@ Please report any issues or bugs in the GitHub issue tracker. Pull requests are 
 
 ## License
 
-[Previous license section remains the same...]
+**Generate Secure Values**
+   ```bash
+   # Generate session secret
+   ruby -e "require 'securerandom'; puts SecureRandom.hex(32)"
+   # Example output: 7cd9557c4c03a50a3de3731ce74f762c...
+
+   # Generate password hash
+   ruby -e "require 'bcrypt'; puts BCrypt::Password.create('your_password')"
+   # Example output: $2a$12$K7Sv1OE4YMB0vU7Wf8USW.RGkE0J...
+   ```
