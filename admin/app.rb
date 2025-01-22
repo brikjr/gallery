@@ -495,23 +495,39 @@ class AdminPanel < Sinatra::Base
 
   # Image upload
   post '/gallery/:name/upload' do
-    require_auth
+    authenticate!
     
-    unless params[:file] && params[:file][:tempfile] && params[:file][:filename]
-      flash[:error] = "No file selected"
-      redirect "/admin/gallery/#{params[:name]}"
+    begin
+      gallery = params[:name]
+      file = params[:file]
+      caption = params[:caption]
+      copyright = params[:copyright]
+      
+      logger.info "Processing upload for gallery: #{gallery}"
+      logger.info "File details: #{file.inspect}"
+      
+      if file
+        filename = file[:filename]
+        logger.info "Processing file: #{filename}"
+        
+        success = process_image(file, gallery, filename, caption, copyright)
+        
+        if success
+          flash[:success] = "Successfully uploaded #{filename}"
+        else
+          flash[:error] = "Failed to upload image. Check admin.log for details."
+        end
+      else
+        flash[:error] = "No file selected"
+      end
+      
+    rescue => e
+      logger.error "Upload error: #{e.message}"
+      logger.error e.backtrace.join("\n")
+      flash[:error] = "Upload error: #{e.message}"
     end
-
-    file = params[:file]
-    filename = file[:filename]
     
-    if process_image(file, params[:name], filename, params[:caption], params[:copyright])
-      flash[:success] = "Image uploaded successfully"
-    else
-      flash[:error] = "Failed to upload image"
-    end
-    
-    redirect "/admin/gallery/#{params[:name]}"
+    redirect "/admin/gallery/#{gallery}"
   end
 
   # Delete image
