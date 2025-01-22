@@ -51,8 +51,13 @@ class ImageHandler:
             
     def update_gallery_yaml(self, gallery, filename, caption='', copyright=''):
         try:
+            # Note: index.html is in images/gallery while photos are in images/albums/gallery
             index_file = os.path.join('images', gallery, 'index.html')
             
+            if not os.path.exists(index_file):
+                print(f"Error: Gallery index not found: {index_file}")
+                return False
+                
             # Read existing front matter
             with open(index_file) as f:
                 content = f.read()

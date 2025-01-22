@@ -11,6 +11,7 @@ require 'tempfile'
 require 'open3'
 require 'dotenv'
 require 'logger'
+require 'sinatra/flash'
 
 # Load environment variables before defining the class
 Dotenv.load('.env.local', '.env') if ENV['RACK_ENV'] != 'production'
@@ -54,6 +55,9 @@ class AdminPanel < Sinatra::Base
     
     # Add local repository path
     set :repo_path, ENV['LOCAL_REPO_PATH'] || File.expand_path('../..', __FILE__)
+
+    # Enable flash messages
+    register Sinatra::Flash
   end
 
   # Debug output
@@ -582,6 +586,88 @@ class AdminPanel < Sinatra::Base
       test_result: BCrypt::Password.new(stored_hash) == password,
       env_username: ENV['ADMIN_USERNAME']
     }.to_json
+  end
+
+  post '/push' do
+    authenticate!
+    
+    begin
+      # Initialize GitHub client
+      client = Octokit::Client.new(access_token: ENV['GITHUB_TOKEN'])
+      repo = ENV['REPO_NAME']
+
+      # Try to get the default branch (main or master)
+      begin
+        master = client.ref(repo, "heads/main")
+        base_branch = "main"
+      rescue Octokit::NotFound
+        begin
+          master = client.ref(repo, "heads/master")
+          base_branch = "master"
+        rescue Octokit::NotFound
+          # Create main branch if neither exists
+          default_content = "# Gallery\nPhoto gallery website"
+          blob_sha = client.create_blob(repo, Base64.encode64(default_content), "base64")
+          tree_sha = client.create_tree(repo, [{
+            path: "README.md",
+            mode: "100644",
+            type: "blob",
+            sha: blob_sha
+          }]).sha
+          commit_sha = client.create_commit(repo, "Initial commit", tree_sha).sha
+          client.create_ref(repo, "refs/heads/main", commit_sha)
+          master = client.ref(repo, "heads/main")
+          base_branch = "main"
+        end
+      end
+
+      base_tree = client.commit(repo, master.object.sha).commit.tree.sha
+
+      # Get all image and metadata files
+      files_to_push = []
+      
+      # Add image files
+      Dir.glob('images/albums/**/*.*').each do |file|
+        next if File.directory?(file)
+        files_to_push << file
+      end
+      
+      # Add metadata files (index.html)
+      Dir.glob('images/**/index.html').each do |file|
+        next if File.directory?(file)
+        files_to_push << file
+      end
+
+      # Create blobs for each file
+      blobs = files_to_push.map do |file|
+        content = File.read(file)
+        blob = client.create_blob(repo, Base64.encode64(content), "base64")
+        {
+          path: file,
+          mode: "100644",
+          type: "blob",
+          sha: blob
+        }
+      end
+
+      # Create tree
+      tree = client.create_tree(repo, blobs, base_tree: base_tree)
+
+      # Create commit
+      commit = client.create_commit(repo, "Updated gallery", tree.sha, master.object.sha)
+      
+      # Update reference
+      client.update_ref(repo, "heads/#{base_branch}", commit.sha)
+
+      flash[:success] = "Successfully pushed #{files_to_push.length} files to GitHub! 🚀"
+      logger.info "Successfully pushed #{files_to_push.length} files to GitHub"
+    rescue => e
+      logger.error "GitHub push error: #{e.message}"
+      logger.error e.backtrace.join("\n")
+      flash[:error] = "Failed to push to GitHub: #{e.message}"
+    end
+
+    redirect '/admin/dashboard'
   end
 
   private
