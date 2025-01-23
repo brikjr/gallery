@@ -2,13 +2,7 @@
 
 import os
 import sys
-try:
-    from PIL import Image
-except ImportError:
-    print("Error: Pillow package not found. Please install it with:")
-    print("pip install Pillow")
-    sys.exit(1)
-
+from PIL import Image
 import yaml
 import shutil
 from pathlib import Path
@@ -32,9 +26,6 @@ class ImageHandler:
                 print(f"Error: Invalid image file: {e}")
                 return False
                 
-            # Handle special case for landscapes gallery
-            gallery_path = 'landscapes' if gallery == 'landscape' else gallery
-            
             # Create gallery directory if needed
             gallery_dir = os.path.join('images', 'albums', gallery)
             os.makedirs(gallery_dir, exist_ok=True)
@@ -43,13 +34,10 @@ class ImageHandler:
             dest_path = os.path.join(gallery_dir, filename)
             shutil.copy2(src_path, dest_path)
             
-            # Update gallery index using the correct path
-            success = self.update_gallery_yaml(gallery_path, filename, caption, copyright)
-            if not success:
-                print(f"Failed to update gallery index for {gallery_path}")
-                return False
+            # Update gallery index
+            success = self.update_gallery_yaml(gallery, filename, caption, copyright)
             
-            return True
+            return success
             
         except Exception as e:
             print(f"Error processing image: {e}")
