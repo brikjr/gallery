@@ -182,7 +182,7 @@ If the admin panel is not working:
    # Start Jekyll with detailed logs
    bundle exec jekyll serve --port 5000 --livereload --verbose
    # for ruby server
-   bundle exec rackup -p 4567  
+   bundle exec rackup -p 4567
    ```
 
 2. **Monitor GitHub API Rate Limits**
