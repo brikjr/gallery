@@ -1,0 +1,9 @@
+::1 - - [04/Feb/2025:18:29:02 -0500] "GET /admin/login HTTP/1.1" 200 1368 0.0088
+::1 - - [04/Feb/2025:18:29:06 -0500] "POST /admin/login HTTP/1.1" 303 - 0.0017
+::1 - - [04/Feb/2025:18:29:06 -0500] "GET /admin/dashboard HTTP/1.1" 200 3201 0.6219
+::1 - - [04/Feb/2025:18:29:13 -0500] "GET /admin/gallery/portrait HTTP/1.1" 200 6804 0.9755
+::1 - - [04/Feb/2025:18:30:10 -0500] "GET /admin/gallery/disposable HTTP/1.1" 200 6927 0.8670
+::1 - - [04/Feb/2025:18:30:12 -0500] "GET /admin/gallery/landscape HTTP/1.1" 200 13252 0.9624
+::1 - - [04/Feb/2025:18:31:40 -0500] "POST /admin/gallery/landscape/upload HTTP/1.1" 303 - 0.4991
+::1 - - [04/Feb/2025:18:31:41 -0500] "GET /admin/gallery/landscape HTTP/1.1" 200 13466 0.8848
+::1 - - [04/Feb/2025:18:31:46 -0500] "GET /admin/dashboard HTTP/1.1" 200 3201 0.4973
