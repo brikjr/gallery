@@ -532,51 +532,60 @@ class AdminPanel < Sinatra::Base
   end
 
   # Delete image
-  post '/gallery/:name/delete/:image' do
-    require_authentication
-    gallery = normalize_gallery_name(params[:name])
-    image = params[:image]
-    
+  # Replace the existing delete route with this:
+post '/gallery/:name/delete/:image' do
+  require_auth  # Changed from require_authentication to require_auth
+  gallery = normalize_gallery_name(params[:name])
+  image = params[:image]
+  
+  begin
+    # Delete original image
     begin
-      # Delete original image
-      begin
-        file = github_client.contents(REPO_NAME, path: "images/albums/#{gallery}/#{image}")
-        github_client.delete_contents(
-          REPO_NAME,
-          "images/albums/#{gallery}/#{image}",
-          "Delete #{image}",
-          file.sha,
-          branch: BRANCH
-        )
-      rescue Octokit::NotFound
-        logger.warn "Original image not found: #{image}"
-      end
-      
-      # Delete thumbnail
-      begin
-        thumb = github_client.contents(REPO_NAME, path: "images/albums/#{gallery}/thumbs/#{image}")
-        github_client.delete_contents(
-          REPO_NAME,
-          "images/albums/#{gallery}/thumbs/#{image}",
-          "Delete thumbnail for #{image}",
-          thumb.sha,
-          branch: BRANCH
-        )
-      rescue Octokit::NotFound
-        logger.warn "Thumbnail not found: #{image}"
-      end
-      
-      # Update gallery index
-      remove_from_gallery_yaml(gallery, image)
-      
-      session[:flash] = { success: "Image deleted successfully!" }
-    rescue => e
-      logger.error "Delete failed: #{e.message}"
-      session[:flash] = { error: "Delete failed: #{e.message}" }
+      file = github_client.contents(REPO_NAME, path: "images/albums/#{gallery}/#{image}")
+      github_client.delete_contents(
+        REPO_NAME,
+        "images/albums/#{gallery}/#{image}",
+        "Delete #{image}",
+        file.sha,
+        branch: BRANCH
+      )
+    rescue Octokit::NotFound
+      logger.warn "Original image not found: #{image}"
     end
     
-    redirect "/admin/gallery/#{gallery}"
+    # Delete thumbnail if it exists
+    begin
+      thumb = github_client.contents(REPO_NAME, path: "images/albums/#{gallery}/thumbs/#{image}")
+      github_client.delete_contents(
+        REPO_NAME,
+        "images/albums/#{gallery}/thumbs/#{image}",
+        "Delete thumbnail for #{image}",
+        thumb.sha,
+        branch: BRANCH
+      )
+    rescue Octokit::NotFound
+      logger.warn "Thumbnail not found: #{image}"
+    end
+    
+    # Update gallery index
+    remove_from_gallery_yaml(gallery, image)
+    
+    # Remove local files if they exist
+    local_image = File.join(settings.repo_path, 'images', 'albums', gallery, image)
+    local_thumb = File.join(settings.repo_path, 'images', 'albums', gallery, 'thumbs', image)
+    
+    File.delete(local_image) if File.exist?(local_image)
+    File.delete(local_thumb) if File.exist?(local_thumb)
+    
+    session[:flash] = { success: "Image deleted successfully!" }
+  rescue => e
+    logger.error "Delete failed: #{e.message}"
+    logger.error e.backtrace.join("\n")
+    session[:flash] = { error: "Delete failed: #{e.message}" }
   end
+  
+  redirect "/admin/gallery/#{gallery}"
+end
 
   # Temporary test route - remove in production
   get '/admin/test-env' do
@@ -632,43 +641,110 @@ class AdminPanel < Sinatra::Base
     path = gallery == 'landscape' ? 'images/landscapes/index.html' : "images/#{gallery}/index.html"
     
     begin
-      # Get current file
-      file = github_client.contents(REPO_NAME, path: path)
+      # Get current file with a fresh API call
+      file = github_client.contents(REPO_NAME, path: path, ref: BRANCH)
       content = Base64.decode64(file.content)
       
-      # Remove the image entry and its associated caption and copyright lines
-      lines = content.lines
-      new_lines = []
-      skip_next_lines = 0
+      # Parse YAML front matter
+      parts = content.split(/^---\s*$/)
+      if parts.length < 3
+        logger.error "Invalid index.html format"
+        return false
+      end
       
-      lines.each do |line|
-        if skip_next_lines > 0
-          skip_next_lines -= 1
-          next
+      front_matter = YAML.safe_load(parts[1]) || {}
+      rest_content = parts[2] || "\n"
+      
+      if front_matter['images']
+        # Remove the image entry
+        front_matter['images'].reject! do |img|
+          img['image_path'].end_with?(filename)
         end
         
-        if line.include?("/#{filename}")
-          skip_next_lines = 2  # Skip the next 2 lines (caption and copyright)
-        else
-          new_lines << line
+        # Reconstruct the content
+        new_content = "---\n"
+        new_content += front_matter.to_yaml
+        new_content += "---"
+        new_content += rest_content
+  
+        # Update file with retry logic
+        max_retries = 3
+        retry_count = 0
+        
+        begin
+          github_client.update_contents(
+            REPO_NAME,
+            path,
+            "Remove #{filename} from gallery index",
+            file.sha,
+            new_content,
+            branch: BRANCH
+          )
+          return true
+        rescue Octokit::Conflict => e
+          retry_count += 1
+          if retry_count <= max_retries
+            logger.warn "Conflict detected, retrying... (#{retry_count}/#{max_retries})"
+            # Get fresh content and SHA
+            file = github_client.contents(REPO_NAME, path: path, ref: BRANCH)
+            sleep(1) # Add small delay before retry
+            retry
+          else
+            logger.error "Failed to update after #{max_retries} retries"
+            raise e
+          end
+        end
+      end
+    rescue => e
+      logger.error "Error removing image from index: #{e.message}"
+      logger.error e.backtrace.join("\n")
+      raise e
+    end
+  end
+  
+  # Update the delete route
+  post '/gallery/:name/delete/:image' do
+    require_auth
+    gallery = normalize_gallery_name(params[:name])
+    image = params[:image]
+    
+    begin
+      # First, remove from index.html to update metadata
+      remove_from_gallery_yaml(gallery, image)
+      
+      # Then delete the actual image files
+      ["images/albums/#{gallery}/#{image}", "images/albums/#{gallery}/thumbs/#{image}"].each do |file_path|
+        begin
+          file = github_client.contents(REPO_NAME, path: file_path, ref: BRANCH)
+          github_client.delete_contents(
+            REPO_NAME,
+            file_path,
+            "Delete #{image}",
+            file.sha,
+            branch: BRANCH
+          )
+          logger.info "Successfully deleted #{file_path}"
+        rescue Octokit::NotFound
+          logger.warn "File not found: #{file_path}"
         end
       end
       
-      updated_content = new_lines.join
+      # Clean up local files
+      [
+        File.join(settings.repo_path, 'images', 'albums', gallery, image),
+        File.join(settings.repo_path, 'images', 'albums', gallery, 'thumbs', image)
+      ].each do |local_path|
+        File.delete(local_path) if File.exist?(local_path)
+      end
       
-      # Update file
-      github_client.update_contents(
-        REPO_NAME,
-        path,
-        "Remove #{filename} from gallery index",
-        file.sha,
-        updated_content,
-        branch: BRANCH
-      )
+      session[:flash] = { success: "Image deleted successfully!" }
     rescue => e
-      logger.error "Error removing image from index: #{e.message}"
-      raise e
+      logger.error "Delete failed: #{e.message}"
+      logger.error e.backtrace.join("\n")
+      session[:flash] = { error: "Delete failed: #{e.message}" }
     end
+    
+    redirect "/admin/gallery/#{gallery}"
   end
 
   def process_image(file, gallery, filename, caption, copyright)
