@@ -639,6 +639,7 @@ end
 
   def remove_from_gallery_yaml(gallery, filename)
     path = gallery == 'landscape' ? 'images/landscapes/index.html' : "images/#{gallery}/index.html"
+    image_path_to_remove = "/images/albums/#{gallery}/#{filename}"
     
     begin
       # Get current file with a fresh API call
@@ -656,10 +657,14 @@ end
       rest_content = parts[2] || "\n"
       
       if front_matter['images']
-        # Remove the image entry
+        # Remove the image entry by exact path match
+        original_count = front_matter['images'].length
         front_matter['images'].reject! do |img|
-          img['image_path'].end_with?(filename)
+          img['image_path'] == image_path_to_remove
         end
+        
+        removed_count = original_count - front_matter['images'].length
+        logger.info "Removed #{removed_count} entries for #{image_path_to_remove}"
         
         # Reconstruct the content
         new_content = "---\n"
@@ -680,6 +685,7 @@ end
             new_content,
             branch: BRANCH
           )
+          logger.info "Successfully updated index.html"
           return true
         rescue Octokit::Conflict => e
           retry_count += 1
@@ -697,6 +703,7 @@ end
       end
     rescue => e
       logger.error "Error removing image from index: #{e.message}"
+      logger.error "Image path attempted to remove: #{image_path_to_remove}"
       logger.error e.backtrace.join("\n")
       raise e
     end

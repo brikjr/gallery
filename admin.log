@@ -46,3 +46,12 @@
 ::1 - - [04/Feb/2025:18:44:09 -0500] "POST /admin/gallery/landscape/upload HTTP/1.1" 303 - 0.1253
 ::1 - - [04/Feb/2025:18:44:10 -0500] "GET /admin/gallery/landscape HTTP/1.1" 200 14408 0.9275
 ::1 - - [04/Feb/2025:18:44:13 -0500] "GET /admin/dashboard HTTP/1.1" 200 3201 0.5089
+::1 - - [04/Feb/2025:18:49:18 -0500] "GET /admin/dashboard HTTP/1.1" 302 - 0.0058
+::1 - - [04/Feb/2025:18:49:18 -0500] "GET /admin/login HTTP/1.1" 200 1368 0.0045
+::1 - - [04/Feb/2025:18:49:23 -0500] "POST /admin/login HTTP/1.1" 303 - 0.0019
+::1 - - [04/Feb/2025:18:49:23 -0500] "GET /admin/dashboard HTTP/1.1" 200 3201 0.5992
+::1 - - [04/Feb/2025:18:49:28 -0500] "GET /admin/gallery/landscape HTTP/1.1" 200 15136 0.8560
+::1 - - [04/Feb/2025:18:49:58 -0500] "GET /admin/gallery/subjects HTTP/1.1" 200 12275 0.7683
+::1 - - [04/Feb/2025:18:50:03 -0500] "POST /admin/gallery/subjects/delete/000006.JPG HTTP/1.1" 303 - 1.5252
+::1 - - [04/Feb/2025:18:50:04 -0500] "GET /admin/gallery/subjects HTTP/1.1" 200 12475 0.8099
+::1 - - [04/Feb/2025:18:50:07 -0500] "GET /admin/dashboard HTTP/1.1" 200 3201 0.5634
