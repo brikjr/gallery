@@ -73,7 +73,7 @@ class AdminPanel < Sinatra::Base
   # Constants - define only once
   GITHUB_TOKEN = ENV['GITHUB_TOKEN']
   REPO_NAME = ENV['REPO_NAME']
-  BRANCH = 'main'
+  BRANCH = 'gh-pages'
 
   # Add helper to check if environment variables are set
   def check_env_vars
