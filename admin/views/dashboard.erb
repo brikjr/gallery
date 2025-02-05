@@ -11,16 +11,43 @@
     </div>
   <% end %>
 
-  <h1 class="text-2xl mb-6">Galleries</h1>
-  
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl">Dashboard</h1>
+    <a href="/admin/albums/new" 
+       class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+      Create New Album
+    </a>
+  </div>
+
+  <!-- Main Features -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <!-- Slider Management -->
+    <div class="bg-gray-50 p-6 rounded">
+      <h2 class="text-xl mb-4">Slider Images</h2>
+      <p class="text-gray-600 mb-4">Manage the images shown in the homepage slider</p>
+      <a href="/admin/slider" 
+         class="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+        Manage Slider
+      </a>
+    </div>
+  </div>
+
+  <!-- Galleries -->
+  <h2 class="text-2xl mb-6">Galleries</h2>
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <% @galleries.each do |gallery| %>
-      <div class="bg-gray-50 p-4 rounded">
-        <h2 class="text-xl mb-2"><%= gallery.capitalize %></h2>
-        <a href="/admin/gallery/<%= gallery %>" 
-           class="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-          Manage Images
-        </a>
+      <div class="bg-gray-50 p-6 rounded">
+        <h3 class="text-xl mb-4"><%= gallery.capitalize %></h3>
+        <div class="space-y-3">
+          <a href="/admin/gallery/<%= gallery %>" 
+             class="block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-center">
+            Manage Images
+          </a>
+          <a href="/admin/gallery/<%= gallery %>/header" 
+             class="block bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 text-center">
+            Update Header
+          </a>
+        </div>
       </div>
     <% end %>
   </div>
@@ -37,4 +64,4 @@
       </button>
     </form>
   </div>
-</div> 
+</div>
