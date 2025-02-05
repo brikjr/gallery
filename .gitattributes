@@ -1,2 +1,9 @@
 *.html linguist-vendored
-*.js linguist-vendored
+js/isotope.pkgd.min.js linguist-vendored
+js/jquery.isotope.min.js linguist-vendored
+js/jquery.magnific-popup.js linguist-vendored
+js/kenburns.min.js linguist-vendored
+js/super-search.js linguist-vendored
+js/zepto.min.js linguist-vendored
+js/main.min.js linguist-vendored
+js/retina.min.js linguist-vendored
