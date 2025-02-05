@@ -642,65 +642,54 @@ end
     image_path_to_remove = "/images/albums/#{gallery}/#{filename}"
     
     begin
-      # Get current file with a fresh API call
       file = github_client.contents(REPO_NAME, path: path, ref: BRANCH)
       content = Base64.decode64(file.content)
       
-      # Parse YAML front matter
-      parts = content.split(/^---\s*$/)
-      if parts.length < 3
+      # Split content properly, accounting for potential multiple separators
+      parts = content.split(/^---\s*$/).reject(&:empty?)
+      
+      if parts.length < 2
         logger.error "Invalid index.html format"
         return false
       end
       
-      front_matter = YAML.safe_load(parts[1]) || {}
-      rest_content = parts[2] || "\n"
+      # Take the first YAML block after stripping extra separators
+      front_matter = YAML.safe_load(parts[1].strip) || {}
+      rest_content = parts[2..-1].join.strip
       
       if front_matter['images']
-        # Remove the image entry by exact path match
-        original_count = front_matter['images'].length
-        front_matter['images'].reject! do |img|
-          img['image_path'] == image_path_to_remove
+        logger.info "Current images count: #{front_matter['images'].length}"
+        logger.info "Looking for image path: #{image_path_to_remove}"
+        
+        front_matter['images'] = front_matter['images'].reject do |img|
+          match = img['image_path'] == image_path_to_remove
+          logger.info "Checking #{img['image_path']} - Match: #{match}"
+          match
         end
         
-        removed_count = original_count - front_matter['images'].length
-        logger.info "Removed #{removed_count} entries for #{image_path_to_remove}"
+        logger.info "After removal images count: #{front_matter['images'].length}"
         
-        # Reconstruct the content
+        # Build new content with exactly one set of separators
         new_content = "---\n"
-        new_content += front_matter.to_yaml
-        new_content += "---"
-        new_content += rest_content
+        new_content += front_matter.to_yaml.strip
+        new_content += "\n---\n"
+        new_content += rest_content.strip
+        new_content += "\n"
   
-        # Update file with retry logic
-        max_retries = 3
-        retry_count = 0
+        # Update file in gh-pages branch
+        github_client.update_contents(
+          REPO_NAME,
+          path,
+          "Remove #{filename} from gallery index",
+          file.sha,
+          new_content,
+          branch: BRANCH
+        )
         
-        begin
-          github_client.update_contents(
-            REPO_NAME,
-            path,
-            "Remove #{filename} from gallery index",
-            file.sha,
-            new_content,
-            branch: BRANCH
-          )
-          logger.info "Successfully updated index.html"
-          return true
-        rescue Octokit::Conflict => e
-          retry_count += 1
-          if retry_count <= max_retries
-            logger.warn "Conflict detected, retrying... (#{retry_count}/#{max_retries})"
-            # Get fresh content and SHA
-            file = github_client.contents(REPO_NAME, path: path, ref: BRANCH)
-            sleep(1) # Add small delay before retry
-            retry
-          else
-            logger.error "Failed to update after #{max_retries} retries"
-            raise e
-          end
-        end
+        logger.info "Successfully updated index file"
       end
+      
+      return true
     rescue => e
       logger.error "Error removing image from index: #{e.message}"
       logger.error "Image path attempted to remove: #{image_path_to_remove}"
