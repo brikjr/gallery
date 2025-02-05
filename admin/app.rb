@@ -642,12 +642,15 @@ end
     image_path_to_remove = "/images/albums/#{gallery}/#{filename}"
     
     begin
+      logger.info "Starting to remove #{image_path_to_remove} from #{path}"
+      
       file = github_client.contents(REPO_NAME, path: path, ref: BRANCH)
       content = Base64.decode64(file.content)
       
       # Get everything between the first pair of --- markers
-      yaml_content = content.split(/^---\s*$/, 3)[1]
-      rest_content = content.split(/^---\s*$/, 3)[2] || ''
+      parts = content.split(/^---\s*$/, 3)
+      yaml_content = parts[1]
+      rest_content = parts[2] || ''
   
       if yaml_content.nil?
         logger.error "Invalid index.html format - no YAML content found"
@@ -663,18 +666,37 @@ end
       end
   
       if front_matter['images']
-        logger.info "Current images count: #{front_matter['images'].length}"
-        logger.info "Looking for image path: #{image_path_to_remove}"
-        
-        front_matter['images'] = front_matter['images'].reject do |img|
-          match = img['image_path'] == image_path_to_remove
-          logger.info "Checking #{img['image_path']} - Match: #{match}"
-          match
+        # Log initial state
+        logger.info "Before removal - images count: #{front_matter['images'].length}"
+        logger.info "Current images:"
+        front_matter['images'].each do |img|
+          logger.info "  - #{img['image_path']}"
         end
         
-        logger.info "After removal images count: #{front_matter['images'].length}"
+        # Keep track of removed images
+        original_count = front_matter['images'].length
+        
+        # Only remove exact match
+        front_matter['images'].reject! do |img|
+          is_match = img['image_path'] == image_path_to_remove
+          if is_match
+            logger.info "Found exact match for removal: #{img['image_path']}"
+          end
+          is_match
+        end
+        
+        removed_count = original_count - front_matter['images'].length
+        logger.info "After removal - images count: #{front_matter['images'].length} (removed #{removed_count})"
+        logger.info "Remaining images:"
+        front_matter['images'].each do |img|
+          logger.info "  - #{img['image_path']}"
+        end
   
-        # Construct new YAML with proper indentation
+        if removed_count != 1
+          logger.warn "Warning: Removed #{removed_count} images instead of expected 1"
+        end
+  
+        # Construct new YAML properly
         yaml_string = front_matter.to_yaml.gsub(/^---\n/, '').gsub(/\.\.\.\n/, '')
   
         # Rebuild the file content with proper spacing
@@ -684,6 +706,7 @@ end
         new_content += "\n" unless new_content.end_with?("\n")
   
         # Update file in gh-pages branch
+        logger.info "Updating GitHub with new content..."
         github_client.update_contents(
           REPO_NAME,
           path,
