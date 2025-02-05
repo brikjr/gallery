@@ -34,3 +34,11 @@
 ::1 - - [04/Feb/2025:19:13:25 -0500] "POST /admin/gallery/portrait/upload HTTP/1.1" 303 - 0.1431
 ::1 - - [04/Feb/2025:19:13:26 -0500] "GET /admin/gallery/portrait HTTP/1.1" 200 7009 0.7378
 ::1 - - [04/Feb/2025:19:13:33 -0500] "GET /admin/dashboard HTTP/1.1" 200 3201 0.5732
+::1 - - [04/Feb/2025:19:17:01 -0500] "GET /admin/gallery/portrait HTTP/1.1" 302 - 0.0079
+::1 - - [04/Feb/2025:19:17:01 -0500] "GET /admin/login HTTP/1.1" 200 1368 0.0051
+::1 - - [04/Feb/2025:19:17:08 -0500] "POST /admin/login HTTP/1.1" 303 - 0.0014
+::1 - - [04/Feb/2025:19:17:09 -0500] "GET /admin/dashboard HTTP/1.1" 200 3201 0.6047
+::1 - - [04/Feb/2025:19:17:11 -0500] "GET /admin/gallery/portrait HTTP/1.1" 200 6804 0.8222
+::1 - - [04/Feb/2025:19:17:18 -0500] "POST /admin/gallery/portrait/delete/000036.JPG HTTP/1.1" 303 - 2.0557
+::1 - - [04/Feb/2025:19:17:19 -0500] "GET /admin/gallery/portrait HTTP/1.1" 200 6047 0.7547
+::1 - - [04/Feb/2025:19:17:21 -0500] "GET /admin/dashboard HTTP/1.1" 200 3201 0.5274

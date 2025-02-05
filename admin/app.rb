@@ -645,18 +645,23 @@ end
       file = github_client.contents(REPO_NAME, path: path, ref: BRANCH)
       content = Base64.decode64(file.content)
       
-      # Split content properly, accounting for potential multiple separators
-      parts = content.split(/^---\s*$/).reject(&:empty?)
-      
-      if parts.length < 2
-        logger.error "Invalid index.html format"
+      # Get everything between the first pair of --- markers
+      yaml_content = content.split(/^---\s*$/, 3)[1]
+      rest_content = content.split(/^---\s*$/, 3)[2] || ''
+  
+      if yaml_content.nil?
+        logger.error "Invalid index.html format - no YAML content found"
         return false
       end
-      
-      # Take the first YAML block after stripping extra separators
-      front_matter = YAML.safe_load(parts[1].strip) || {}
-      rest_content = parts[2..-1].join.strip
-      
+  
+      begin
+        front_matter = YAML.safe_load(yaml_content) || {}
+      rescue => e
+        logger.error "YAML parsing error: #{e.message}"
+        logger.error "YAML content that failed to parse: #{yaml_content}"
+        return false
+      end
+  
       if front_matter['images']
         logger.info "Current images count: #{front_matter['images'].length}"
         logger.info "Looking for image path: #{image_path_to_remove}"
@@ -668,13 +673,15 @@ end
         end
         
         logger.info "After removal images count: #{front_matter['images'].length}"
-        
-        # Build new content with exactly one set of separators
-        new_content = "---\n"
-        new_content += front_matter.to_yaml.strip
-        new_content += "\n---\n"
-        new_content += rest_content.strip
-        new_content += "\n"
+  
+        # Construct new YAML with proper indentation
+        yaml_string = front_matter.to_yaml.gsub(/^---\n/, '').gsub(/\.\.\.\n/, '')
+  
+        # Rebuild the file content with proper spacing
+        new_content = "---\n#{yaml_string}---#{rest_content}"
+  
+        # Add final newline if missing
+        new_content += "\n" unless new_content.end_with?("\n")
   
         # Update file in gh-pages branch
         github_client.update_contents(
@@ -687,9 +694,12 @@ end
         )
         
         logger.info "Successfully updated index file"
+        return true
+      else
+        logger.warn "No images section found in front matter"
+        return false
       end
       
-      return true
     rescue => e
       logger.error "Error removing image from index: #{e.message}"
       logger.error "Image path attempted to remove: #{image_path_to_remove}"
